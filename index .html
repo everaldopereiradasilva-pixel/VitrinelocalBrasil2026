@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitrine Local Brasil - Vídeos & Anúncios</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PWA Web App Manifest dinâmico -->
+    <script>
+        const manifestData = {
+            "name": "Vitrine Local Brasil",
+            "short_name": "VitrineLocal",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#0f172a",
+            "theme_color": "#2563eb",
+            "icons": [{
+                "src": "https://cdn-icons-png.flaticon.com/512/1261/1261163.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+    </script>
+    
+    <style>
+        .badge-destaque {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        }
+        /* Snap scrolling estilo TikTok / Reels */
+        .tiktok-feed {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: calc(100vh - 65px - 33px);
+            -webkit-overflow-scrolling: touch;
+        }
+        .tiktok-item {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: calc(100vh - 65px - 33px);
+            flex-shrink: 0;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shadow-lg h-[65px] flex items-center">
+        <div class="max-w-md mx-auto w-full px-4 flex items-center justify-between gap-2">
+            <!-- Logo e Título -->
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-play text-red-500 text-xl animate-pulse"></i>
+                <h1 class="text-base font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-red-400 bg-clip-text text-transparent">
+                    Vitrine Reels
+                </h1>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="openModal('modal-renovar')" class="bg-amber-600/80 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+                    <i class="fa-solid fa-rotate text-xs"></i> Renovação
+                </button>
+                <button onclick="openModal('modal-cadastrar')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+                    <i class="fa-solid fa-plus"></i> Anunciar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BANNER DE STATUS DE PIX / CADASTRO -->
+    <div id="client-status-banner" class="hidden bg-emerald-900/95 border-b border-emerald-600 px-3 py-1.5 text-center text-xs text-emerald-100 flex items-center justify-between z-30 shadow-md">
+        <div class="flex items-center gap-2 truncate">
+            <i class="fa-solid fa-circle-check text-emerald-400 text-sm flex-shrink-0"></i>
+            <span class="truncate">Sucesso! Seu vídeo já está rodando na vitrine do Reels.</span>
+        </div>
+        <button onclick="document.getElementById('client-status-banner').classList.add('hidden')" class="ml-2 text-emerald-300 hover:text-white font-bold">&times;</button>
+    </div>
+
+    <!-- VITRINE DE REELS (FEED VERTICAL) -->
+    <main class="w-full flex-1 max-w-md mx-auto relative bg-black">
+        
+        <!-- BARRINHA / CAMPO RÁPIDO FIXO SOBRE A VITRINE -->
+        <div class="absolute top-3 left-3 right-3 z-30 flex items-center justify-between bg-slate-900/80 backdrop-blur-md border border-slate-700/80 p-2 rounded-xl shadow-2xl">
+            <div class="flex items-center gap-2 pl-1 truncate">
+                <i class="fa-solid fa-circle-plus text-red-500 animate-bounce"></i>
+                <span class="text-xs font-semibold text-slate-200 truncate">Quer divulgar seu vídeo aqui?</span>
+            </div>
+            <button onclick="openModal('modal-cadastrar')" class="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md transition flex items-center gap-1 flex-shrink-0">
+                <i class="fa-solid fa-upload text-[11px]"></i> Adicionar & Pagar
+            </button>
+        </div>
+
+        <div id="tiktok-container" class="tiktok-feed w-full">
+            <!-- Os cards de vídeo serão renderizados via JavaScript -->
+        </div>
+    </main>
+
+    <!-- MODAL 1: Formulário de Cadastro com Vídeo de Propaganda e Pagamento -->
+    <div id="modal-cadastrar" class="fixed inset-0 bg-black/85 z-50 hidden items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-slate-900 rounded-xl border border-slate-800 max-w-md w-full p-4 sm:p-6 relative my-auto max-h-[90vh] overflow-y-auto shadow-2xl">
+            <button onclick="closeModal('modal-cadastrar')" class="absolute top-3 right-3 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-video text-red-500"></i> Publicar Vídeo na Vitrine
+            </h3>
+            <p class="text-xs text-slate-400 mb-3">Envie um vídeo curto (máximo 15 a 30 segundos) para evitar travamentos.</p>
+
+            <form id="form-cadastro" onsubmit="submitCadastro(event)" class="space-y-3">
+                <!-- VÍDEO DE PROPAGANDA -->
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <label class="block text-xs font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-video text-red-500 text-sm"></i> Selecionar Vídeo (MP4/WebM):
+                    </label>
+                    <input type="file" id="cad-video-file" accept="video/*" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-500 cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">Dica: Escolha vídeos curtos para carregar instantaneamente.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Escolha o Plano:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="plan" value="basico" class="peer hidden" checked>
+                            <div class="border border-slate-800 rounded-lg p-2 text-center peer-checked:border-blue-500 peer-checked:bg-blue-950/40 transition">
+                                <div class="text-[11px] font-bold text-white">Básico</div>
+                                <div class="text-[10px] text-blue-400 font-bold mt-0.5">R$ 30 (30d)</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="plan" value="popular" class="peer hidden">
+                            <div class="border border-slate-800 rounded-lg p-2 text-center peer-checked:border-blue-500 peer-checked:bg-blue-950/40 transition">
+                                <div class="text-[11px] font-bold text-white">Popular</div>
+                                <div class="text-[10px] text-blue-400 font-bold mt-0.5">R$ 100 (30d)</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="plan" value="destaque" class="peer hidden">
+                            <div class="border border-slate-800 rounded-lg p-2 text-center peer-checked:border-amber-500 peer-checked:bg-amber-950/40 transition">
+                                <div class="text-[11px] font-bold text-amber-400">Destaque ⭐</div>
+                                <div class="text-[10px] text-amber-400 font-bold mt-0.5">R$ 150 (30d)</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">Estado (UF):</label>
+                        <select id="cad-state" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            <option value="SP">São Paulo (SP)</option>
+                            <option value="RJ">Rio de Janeiro (RJ)</option>
+                            <option value="MG">Minas Gerais (MG)</option>
+                            <option value="PR">Paraná (PR)</option>
+                            <option value="SC">Santa Catarina (SC)</option>
+                            <option value="RS">Rio Grande do Sul (RS)</option>
+                            <option value="BA">Bahia (BA)</option>
+                            <option value="GO">Goiás (GO)</option>
+                            <option value="OUTRO">Outro Estado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cidade:</label>
+                        <input type="text" id="cad-city" required placeholder="Ex: Hortolândia" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome do Estabelecimento / Negócio:</label>
+                    <input type="text" id="cad-name" required placeholder="Ex: Hamburgueria Silva" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">Categoria:</label>
+                        <select id="cad-category" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            <option value="Alimentação">Alimentação</option>
+                            <option value="Serviços">Serviços / Reparos</option>
+                            <option value="Comércio">Comércio / Lojas</option>
+                            <option value="Saúde">Saúde & Beleza</option>
+                            <option value="Veículos">Oficina / Veículos</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">Telefone (DDD + Nº):</label>
+                        <input type="tel" id="cad-phone" required placeholder="19 99999-9999" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">
+                        <i class="fa-brands fa-instagram text-pink-500"></i> Instagram:
+                    </label>
+                    <input type="text" id="cad-instagram" required placeholder="@seu_negocio" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Endereço / Bairro:</label>
+                    <input type="text" id="cad-address" required placeholder="Ex: Rua Central, 120 - Centro" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Descrição / Promoção:</label>
+                    <textarea id="cad-desc" rows="2" required placeholder="Descreva a oferta..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs sm:text-sm transition mt-2 flex items-center justify-center gap-1 shadow-lg">
+                    Ir para Pagamento Pix <i class="fa-solid fa-qrcode"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE SUCESSO DE CADASTRO COM DOWNLOAD -->
+    <div id="modal-sucesso-cliente" class="fixed inset-0 bg-black/85 z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-xl border border-slate-800 max-w-xs w-full p-5 relative text-center shadow-2xl">
+            <div class="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2 text-lg">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">Vídeo Enviado com Sucesso!</h3>
+            <p class="text-[11px] text-slate-400 mb-3">Guarde uma cópia do seu vídeo na sua galeria:</p>
+            
+            <button id="btn-download-proprio" onclick="downloadMeuVideo()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 mb-2">
+                <i class="fa-solid fa-download"></i> Baixar Meu Vídeo na Galeria
+            </button>
+            <button onclick="prosseguirParaPix()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5">
+                Continuar para o Pagamento Pix <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Renovação -->
+    <div id="modal-renovar" class="fixed inset-0 bg-black/85 z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-xl border border-slate-800 max-w-sm w-full p-5 relative shadow-2xl">
+            <button onclick="closeModal('modal-renovar')" class="absolute top-3 right-3 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-arrows-rotate text-amber-400"></i> Renovar ou Trocar Plano
+            </h3>
+            <form onsubmit="handleRenovacao(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Selecione seu Anúncio:</label>
+                    <select id="renovar-select-item" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Novo Plano:</label>
+                    <select id="renovar-select-plan" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200">
+                        <option value="basico">Plano Básico - R$ 30,00 (30 Dias)</option>
+                        <option value="popular">Plano Popular - R$ 100,00 (30 Dias)</option>
+                        <option value="destaque">Plano VIP Destaque ⭐ - R$ 150,00 (30 Dias)</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg text-xs transition flex items-center justify-center gap-1">
+                    Gerar Pix de Renovação <i class="fa-solid fa-qrcode"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Checkout Pix -->
+    <div id="modal-pix" class="fixed inset-0 bg-black/85 z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 rounded-xl border border-slate-800 max-w-xs w-full p-5 relative text-center shadow-2xl">
+            <button onclick="closeModal('modal-pix')" class="absolute top-3 right-3 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2 text-lg">
+                <i class="fa-brands fa-pix"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">Pagamento Pix Liberado</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Copie a chave abaixo:</p>
+
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 my-3 text-left">
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>Plano:</span>
+                    <span id="pix-plan-name" class="font-bold text-white">BÁSICO</span>
+                </div>
+                <div class="flex justify-between text-sm font-bold text-white mb-2">
+                    <span>Valor:</span>
+                    <span id="pix-plan-price" class="text-emerald-400">R$ 30,00</span>
+                </div>
+                <div class="border-t border-slate-800 pt-2">
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Chave Pix:</label>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="pix-key-input" readonly class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-emerald-300 font-mono select-all">
+                        <button onclick="copyPixKey()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2.5 rounded font-medium transition flex items-center gap-1">
+                            <i class="fa-solid fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="confirmarPagamentoPix()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg">
+                <i class="fa-solid fa-circle-check text-sm"></i> Já Fiz o Pix / Ver Meu Vídeo na Vitrine
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Painel Admin -->
+    <div id="modal-admin" class="fixed inset-0 bg-black/85 z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 rounded-xl border border-slate-800 max-w-lg w-full p-5 relative my-auto shadow-2xl">
+            <button onclick="closeModal('modal-admin')" class="absolute top-3 right-3 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div id="admin-login-view">
+                <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-blue-500"></i> Painel do Administrador
+                </h3>
+                <form onsubmit="loginAdmin(event)" class="space-y-3 max-w-xs mt-3">
+                    <input type="password" id="admin-pass-input" placeholder="Senha master" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">Entrar</button>
+                </form>
+            </div>
+            <div id="admin-dashboard-view" class="hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-base font-bold text-white">Configurações & Gestão</h3>
+                    <button onclick="logoutAdmin()" class="text-[11px] bg-slate-800 px-2.5 py-1 rounded text-slate-300">Sair</button>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 mb-4 space-y-2">
+                    <h4 class="text-xs font-bold uppercase text-amber-400">WhatsApp Admin</h4>
+                    <input type="text" id="admin-whatsapp-num" class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200">
+                    <h4 class="text-xs font-bold uppercase text-emerald-400 pt-1">Chave Pix</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="admin-pix-key" class="flex-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200">
+                        <button onclick="saveSettings()" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-medium">Salvar</button>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-slate-300 mb-2">Anúncios no Ar</h4>
+                    <div id="admin-active-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-2 text-center text-[10px] text-slate-500 z-30 h-[33px] flex items-center justify-center">
+        <div class="max-w-md mx-auto w-full px-4 flex justify-between items-center">
+            <p>© 2026 Vitrine Local Reels</p>
+            <button onclick="openAdminModal()" class="text-slate-400 hover:text-blue-400 flex items-center gap-1">
+                <i class="fa-solid fa-lock text-[9px]"></i> Painel Admin
+            </button>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        let announcements = [];
+        let settings = {
+            pixKey: '9fe152f5-ffff-4c8a-be31-c874026dea46',
+            adminPass: 'Everaldo43991985',
+            adminWhatsApp: '5519989698007'
+        };
+        let activeCadastro = null;
+        let tempClientVideoUrl = '';
+        let tempClientName = '';
+        let novoAnuncioId = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStorage();
+            renderAnnouncements();
+        });
+
+        function loadStorage() {
+            const saved = localStorage.getItem('vitrine_reels_announcements');
+            if (saved) {
+                try { announcements = JSON.parse(saved); } catch (e) { announcements = []; }
+            } 
+            if (!announcements || announcements.length === 0) {
+                announcements = [
+                    {
+                        id: 1,
+                        name: "Hamburgueria Artesanal Prime",
+                        state: "SP",
+                        city: "Hortolândia",
+                        category: "Alimentação",
+                        plan: "destaque",
+                        phone: "019 98877-6655",
+                        instagram: "@hamburgueriaprime",
+                        address: "Av. Brasil, 450 - Centro",
+                        description: "Os melhores hambúrgueres artesanais na grelha!",
+                        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                        expiresAt: new Date(Date.now() + 30*24*60*60*1000).toISOString()
+                    }
+                ];
+                saveAnnouncements();
+            }
+            const set = localStorage.getItem('vitrine_reels_settings');
+            if (set) {
+                try {
+                    settings = JSON.parse(set);
+                    if (!settings.pixKey) settings.pixKey = '9fe152f5-ffff-4c8a-be31-c874026dea46';
+                } catch (e) {}
+            }
+        }
+
+        function saveAnnouncements() {
+            try {
+                localStorage.setItem('vitrine_reels_announcements', JSON.stringify(announcements));
+            } catch (err) {
+                alert('Atenção: O vídeo escolhido é muito grande para a memória do celular. Escolha um vídeo mais curto ou leve.');
+            }
+            updateRenovacaoOptions();
+        }
+
+        function updateRenovacaoOptions() {
+            const sel = document.getElementById('renovar-select-item');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Selecione seu anúncio...</option>' + 
+                announcements.map(i => `<option value="${i.id}">${i.name} (${i.city}/${i.state})</option>`).join('');
+        }
+
+        function openInstagram(handle) {
+            if (!handle) return;
+            let clean = handle.replace('@', '').trim();
+            let url = clean.startsWith('http') ? clean : `https://instagram.com/${clean}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        function downloadMeuVideo() {
+            if (!tempClientVideoUrl) return;
+            const a = document.createElement('a');
+            a.href = tempClientVideoUrl;
+            a.target = '_blank';
+            a.download = `meu_video_${tempClientName.toLowerCase().replace(/[^a-z0-9]/g, '_')}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function prosseguirParaPix() {
+            closeModal('modal-sucesso-cliente');
+            const prices = { basico: 'R$ 30,00', popular: 'R$ 100,00', destaque: 'R$ 150,00' };
+            document.getElementById('pix-plan-name').innerText = activeCadastro.plan.toUpperCase();
+            document.getElementById('pix-plan-price').innerText = prices[activeCadastro.plan];
+            document.getElementById('pix-key-input').value = settings.pixKey;
+            openModal('modal-pix');
+        }
+
+        function confirmarPagamentoPix() {
+            if (!activeCadastro) return;
+
+            announcements.push(activeCadastro);
+            saveAnnouncements();
+            
+            novoAnuncioId = activeCadastro.id;
+            
+            closeModal('modal-pix');
+            closeModal('modal-sucesso-cliente');
+            closeModal('modal-cadastrar');
+
+            renderAnnouncements();
+
+            document.getElementById('client-status-banner').classList.remove('hidden');
+
+            const msg = `🔥 *NOVO PIX REALIZADO - PROPAGANDA ADICIONADA NA FILA*
+
+*Estabelecimento:* ${activeCadastro.name}
+*Plano:* ${activeCadastro.plan.toUpperCase()}
+*Cidade:* ${activeCadastro.city}/${activeCadastro.state}
+*Instagram:* ${activeCadastro.instagram}
+*Telefone:* ${activeCadastro.phone}
+*Descrição:* ${activeCadastro.description}
+
+O vídeo foi adicionado no final da sequência e já está rodando na vitrine do Reels!`;
+            
+            openWhatsAppAdmin(msg);
+            
+            setTimeout(() => {
+                const element = document.getElementById(`card-${novoAnuncioId}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 200);
+
+            activeCadastro = null;
+        }
+
+        function openWhatsAppAdmin(customMessage) {
+            let cleanPhone = String(settings.adminWhatsApp).replace(/\D/g, '');
+            if (!cleanPhone.startsWith('55') && cleanPhone.length <= 11) cleanPhone = '55' + cleanPhone;
+            const messageEncoded = encodeURIComponent(customMessage || 'Olá Admin! Nova propaganda na fila.');
+            window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${messageEncoded}`, '_blank', 'noopener,noreferrer');
+        }
+
+        function togglePlayPause(videoId, overlayIconId) {
+            const vid = document.getElementById(videoId);
+            const icon = document.getElementById(overlayIconId);
+            if (!vid) return;
+            if (vid.paused) {
+                vid.play().then(() => {
+                    if (icon) {
+                        icon.className = 'fa-solid fa-play text-white text-5xl opacity-80 animate-ping';
+                        setTimeout(() => icon.className = 'hidden', 500);
+                    }
+                }).catch(e => {});
+            } else {
+                vid.pause();
+                if (icon) icon.className = 'fa-solid fa-pause text-white text-5xl opacity-80';
+            }
+        }
+
+        function toggleMute(btn, videoId) {
+            const vid = document.getElementById(videoId);
+            if (!vid) return;
+            vid.muted = !vid.muted;
+            btn.innerHTML = vid.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high text-emerald-400"></i>';
+        }
+
+        function renderAnnouncements() {
+            const now = new Date();
+            announcements = announcements.filter(item => new Date(item.expiresAt) > now);
+
+            const container = document.getElementById('tiktok-container');
+            if (!container) return;
+
+            if (announcements.length === 0) {
+                container.innerHTML = `
+                    <div class="tiktok-item flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                        <i class="fa-solid fa-video-slash text-4xl mb-2 text-slate-600"></i>
+                        <p class="text-sm font-semibold">Nenhum vídeo ativo no momento.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = announcements.map((item) => {
+                const isVideo = item.videoUrl && (item.videoUrl.startsWith('data:video') || item.videoUrl.endsWith('.mp4') || item.videoUrl.endsWith('.webm') || item.videoUrl.includes('commondatastorage.googleapis.com'));
+                const isVIP = item.plan === 'destaque';
+
+                return `
+                <div id="card-${item.id}" class="tiktok-item relative w-full bg-slate-950 flex flex-col justify-end overflow-hidden cursor-pointer" onclick="togglePlayPause('vid-${item.id}', 'icon-${item.id}')">
+                    ${isVideo ? `
+                        <video id="vid-${item.id}" src="${item.videoUrl}" loop muted playsinline webkit-playsinline preload="auto" crossorigin="anonymous" controlslist="nodownload nofullscreen noremoteplayback" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover"></video>
+                    ` : `
+                        <img src="${item.videoUrl}" oncontextmenu="return false;" class="absolute inset-0 w-full h-full object-cover">
+                    `}
+
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/95 pointer-events-none"></div>
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <i id="icon-${item.id}" class="hidden"></i>
+                    </div>
+
+                    ${isVideo ? `
+                        <button onclick="event.stopPropagation(); toggleMute(this, 'vid-${item.id}')" class="absolute top-16 right-4 bg-black/60 backdrop-blur-md text-white p-3 rounded-full z-20 hover:bg-black/80 transition">
+                            <i class="fa-solid fa-volume-xmark"></i>
+                        </button>
+                    ` : ''}
+
+                    ${isVIP ? `
+                        <div class="absolute top-16 left-4 badge-destaque text-slate-950 font-bold text-[10px] uppercase px-3 py-1 rounded-full tracking-wider flex items-center gap-1 z-20 shadow-lg pointer-events-none">
+                            <i class="fa-solid fa-crown"></i> VIP Destaque
+                        </div>
+                    ` : ''}
+
+                    <div class="relative z-20 p-5 space-y-2 mb-1" onclick="event.stopPropagation()">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-800/50">
+                                ${item.category}
+                            </span>
+                            <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+                                <i class="fa-solid fa-location-dot text-red-500"></i> ${item.city}/${item.state}
+                            </span>
+                        </div>
+
+                        <h3 class="text-xl font-bold text-white leading-tight drop-shadow-md">${item.name}</h3>
+                        <p class="text-xs text-slate-300 line-clamp-2 drop-shadow">${item.description}</p>
+
+                        <div class="text-xs text-slate-400 flex items-center gap-1 pt-0.5">
+                            <i class="fa-solid fa-map-pin text-blue-400"></i> ${item.address}
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-slate-700/80 rounded-lg p-2 flex items-center justify-between text-xs text-emerald-400 font-mono font-bold">
+                            <span class="text-slate-400 font-sans font-normal text-[11px]"><i class="fa-solid fa-phone text-emerald-400 mr-1"></i> Contato:</span>
+                            <span>${item.phone}</span>
+                        </div>
+
+                        <div class="flex gap-2">
+                            ${item.instagram ? `
+                                <button onclick="openInstagram('${item.instagram}')" 
+                                        class="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition transform active:scale-95 cursor-pointer">
+                                    <i class="fa-brands fa-instagram text-base"></i> Instagram
+                                </button>
+                            ` : ''}
+                            <button onclick="denunciarConteudo(${item.id}, '${item.name}')" title="Denunciar" class="bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 px-3 py-2.5 rounded-xl text-xs flex items-center justify-center transition">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;}).join('');
+
+            setupVideoObservers();
+            updateRenovacaoOptions();
+        }
+
+        function denunciarConteudo(id, nome) {
+            const motivo = prompt(`Motivo da denúncia para "${nome}":`);
+            if (motivo) {
+                openWhatsAppAdmin(`🚨 *DENÚNCIA DE VÍDEO*\nAnúncio: ${nome}\nMotivo: ${motivo}`);
+                alert('Alerta enviado ao administrador!');
+            }
+        }
+
+        function setupVideoObservers() {
+            const videos = document.querySelectorAll('.tiktok-item video');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const vid = entry.target;
+                    if (entry.isIntersecting) {
+                        vid.currentTime = 0;
+                        vid.play().catch(error => {
+                            vid.muted = true;
+                            vid.play().catch(()=>{});
+                        });
+                    } else {
+                        vid.pause();
+                    }
+                });
+            }, { threshold: 0.6 });
+            videos.forEach(v => observer.observe(v));
+        }
+
+        function submitCadastro(e) {
+            e.preventDefault();
+            
+            const plan = document.querySelector('input[name="plan"]:checked').value;
+            const state = document.getElementById('cad-state').value;
+            const city = document.getElementById('cad-city').value;
+            const name = document.getElementById('cad-name').value;
+            const category = document.getElementById('cad-category').value;
+            const phone = document.getElementById('cad-phone').value;
+            const instagram = document.getElementById('cad-instagram').value;
+            const address = document.getElementById('cad-address').value;
+            const description = document.getElementById('cad-desc').value;
+
+            const videoFile = document.getElementById('cad-video-file').files[0];
+            let fallbackUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+
+            const processCadastro = (finalMediaUrl) => {
+                const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                tempClientVideoUrl = finalMediaUrl || fallbackUrl;
+                tempClientName = name;
+
+                activeCadastro = {
+                    id: Date.now(),
+                    name, state, city, category, plan, phone, instagram, address,
+                    videoUrl: tempClientVideoUrl,
+                    description,
+                    expiresAt
+                };
+
+                closeModal('modal-cadastrar');
+                document.getElementById('form-cadastro').reset();
+                openModal('modal-sucesso-cliente');
+            };
+
+            if (videoFile) {
+                // Validação de tamanho (limite seguro de 15MB para localStorage)
+                if (videoFile.size > 15 * 1024 * 1024) {
+                    alert('O vídeo selecionado é muito grande (acima de 15MB). Por segurança para não travar o celular, vamos usar um vídeo de demonstração otimizado, mas você pode salvá-lo na galeria.');
+                    processCadastro(fallbackUrl);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        processCadastro(e.target.result);
+                    } catch (err) {
+                        alert('Memória cheia para arquivos locais. Usando vídeo otimizado.');
+                        processCadastro(fallbackUrl);
+                    }
+                };
+                reader.onerror = function() {
+                    processCadastro(fallbackUrl);
+                };
+                reader.readAsDataURL(videoFile);
+            } else {
+                processCadastro(fallbackUrl);
+            }
+        }
+
+        function handleRenovacao(e) {
+            e.preventDefault();
+            const id = document.getElementById('renovar-select-item').value;
+            const newPlan = document.getElementById('renovar-select-plan').value;
+            if (!id) { alert('Selecione um anúncio.'); return; }
+
+            const item = announcements.find(i => i.id == id);
+            if (item) {
+                item.plan = newPlan;
+                item.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                saveAnnouncements();
+                renderAnnouncements();
+                closeModal('modal-renovar');
+
+                const prices = { basico: 'R$ 30,00', popular: 'R$ 100,00', destaque: 'R$ 150,00' };
+                document.getElementById('pix-plan-name').innerText = `RENOVAÇÃO (${newPlan.toUpperCase()})`;
+                document.getElementById('pix-plan-price').innerText = prices[newPlan];
+                document.getElementById('pix-key-input').value = settings.pixKey;
+                activeCadastro = item;
+                openModal('modal-pix');
+            }
+        }
+
+        function copyPixKey() {
+            const input = document.getElementById('pix-key-input');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value);
+            alert('Chave Pix copiada com sucesso!');
+        }
+
+        function openModal(id) { 
+            const el = document.getElementById(id);
+            if(el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+        }
+        
+        function closeModal(id) { 
+            const el = document.getElementById(id);
+            if(el) { el.classList.remove('flex'); el.classList.add('hidden'); }
+        }
+
+        function openAdminModal() {
+            document.getElementById('admin-login-view').classList.remove('hidden');
+            document.getElementById('admin-dashboard-view').classList.add('hidden');
+            openModal('modal-admin');
+        }
+
+        function loginAdmin(e) {
+            e.preventDefault();
+            if (document.getElementById('admin-pass-input').value === settings.adminPass) {
+                document.getElementById('admin-login-view').classList.add('hidden');
+                document.getElementById('admin-dashboard-view').classList.remove('hidden');
+                document.getElementById('admin-pix-key').value = settings.pixKey;
+                document.getElementById('admin-whatsapp-num').value = settings.adminWhatsApp;
+                renderAdminList();
+            } else { alert('Senha incorreta!'); }
+        }
+
+        function logoutAdmin() { closeModal('modal-admin'); }
+
+        function saveSettings() {
+            settings.pixKey = document.getElementById('admin-pix-key').value;
+            settings.adminWhatsApp = document.getElementById('admin-whatsapp-num').value.replace(/\D/g,'');
+            localStorage.setItem('vitrine_reels_settings', JSON.stringify(settings));
+            alert('Configurações salvas!');
+        }
+
+        function renderAdminList() {
+            const listEl = document.getElementById('admin-active-list');
+            if (!listEl) return;
+            if (announcements.length === 0) {
+                listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Nenhum anúncio ativo.</p>';
+                return;
+            }
+            listEl.innerHTML = announcements.map(i => `
+                <div class="bg-slate-950 p-2.5 rounded border border-slate-800 flex justify-between items-center gap-2">
+                    <div>
+                        <div class="text-xs font-bold text-white">${i.name} <span class="text-blue-400">(${i.plan})</span></div>
+                        <div class="text-[10px] text-slate-400">${i.city}/${i.state}</div>
+                    </div>
+                    <button onclick="removeAdminItem(${i.id})" class="bg-rose-600 text-white text-[10px] px-2 py-1 rounded">Remover</button>
+                </div>
+            `).join('');
+        }
+
+        function removeAdminItem(id) {
+            if (confirm('Deseja remover este anúncio?')) {
+                announcements = announcements.filter(i => i.id !== id);
+                saveAnnouncements();
+                renderAdminList();
+                renderAnnouncements();
+            }
+        }
+    </script>
+</body>
+</html>
