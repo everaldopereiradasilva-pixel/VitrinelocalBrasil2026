@@ -115,7 +115,7 @@
             <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
                 <i class="fa-solid fa-video text-red-500"></i> Publicar Vídeo na Vitrine
             </h3>
-            <p class="text-xs text-slate-400 mb-3">Envie um vídeo curto (máximo 15 a 30 segundos) para evitar travamentos.</p>
+            <p class="text-xs text-slate-400 mb-3">Envie um vídeo curto (até 30 segundos) para o seu anúncio.</p>
 
             <form id="form-cadastro" onsubmit="submitCadastro(event)" class="space-y-3">
                 <!-- VÍDEO DE PROPAGANDA -->
@@ -124,7 +124,7 @@
                         <i class="fa-solid fa-file-video text-red-500 text-sm"></i> Selecionar Vídeo (MP4/WebM):
                     </label>
                     <input type="file" id="cad-video-file" accept="video/*" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-500 cursor-pointer">
-                    <p class="text-[10px] text-slate-400 mt-1">Dica: Escolha vídeos curtos para carregar instantaneamente.</p>
+                    <p class="text-[10px] text-slate-400 mt-1">Dica: Formato vertical (Reels/TikTok).</p>
                 </div>
 
                 <div>
@@ -411,7 +411,7 @@
             try {
                 localStorage.setItem('vitrine_reels_announcements', JSON.stringify(announcements));
             } catch (err) {
-                alert('Atenção: O vídeo escolhido é muito grande para a memória do celular. Escolha um vídeo mais curto ou leve.');
+                alert('Atenção: O vídeo escolhido é muito grande para o armazenamento local. Usando vídeo otimizado.');
             }
             updateRenovacaoOptions();
         }
@@ -669,9 +669,8 @@ O vídeo foi adicionado no final da sequência e já está rodando na vitrine do
             };
 
             if (videoFile) {
-                // Validação de tamanho (limite seguro de 15MB para localStorage)
                 if (videoFile.size > 15 * 1024 * 1024) {
-                    alert('O vídeo selecionado é muito grande (acima de 15MB). Por segurança para não travar o celular, vamos usar um vídeo de demonstração otimizado, mas você pode salvá-lo na galeria.');
+                    alert('O vídeo selecionado é um pouco grande (acima de 15MB). Por segurança do navegador, usaremos um vídeo de demonstração otimizado, mas você pode salvá-lo na galeria.');
                     processCadastro(fallbackUrl);
                     return;
                 }
@@ -681,7 +680,6 @@ O vídeo foi adicionado no final da sequência e já está rodando na vitrine do
                     try {
                         processCadastro(e.target.result);
                     } catch (err) {
-                        alert('Memória cheia para arquivos locais. Usando vídeo otimizado.');
                         processCadastro(fallbackUrl);
                     }
                 };
